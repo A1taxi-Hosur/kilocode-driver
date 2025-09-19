@@ -107,8 +107,8 @@ export function LocationProvider({ children }: LocationProviderProps) {
       console.log('Driver Name:', driver.user?.full_name)
       console.log('Using supabaseAdmin:', !!supabaseAdmin)
 
-      // Use admin client to bypass RLS
-      const client = supabaseAdmin || supabase
+      // Use standard client with proper RLS policies
+      const client = supabase
       
       // Step 1: Check if record already exists
       console.log('🔍 Checking if location record already exists...')
@@ -353,7 +353,7 @@ export function LocationProvider({ children }: LocationProviderProps) {
         accuracy: location.coords.accuracy
       })
 
-      const client = supabaseAdmin || supabase
+      const client = supabase
       
       const locationData = {
         latitude: location.coords.latitude,
