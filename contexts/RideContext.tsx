@@ -98,11 +98,22 @@ class RideNotificationManager {
     try {
       console.log('🔍 Loading assigned ride...')
       
-      // Check if Supabase is properly configured
-      if (!process.env.EXPO_PUBLIC_SUPABASE_URL || 
-          process.env.EXPO_PUBLIC_SUPABASE_URL.includes('your-project-ref') ||
-          process.env.EXPO_PUBLIC_SUPABASE_URL === 'https://your-project-ref.supabase.co') {
-        console.log('⚠️ Supabase not configured, skipping ride loading')
+      // Check if Supabase is properly configured - more comprehensive check
+      const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL
+      const supabaseKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY
+      
+      if (!supabaseUrl || 
+          !supabaseKey ||
+          supabaseUrl.includes('your-project-ref') ||
+          supabaseUrl.includes('placeholder') ||
+          supabaseUrl === 'https://your-project-ref.supabase.co' ||
+          supabaseKey.includes('your-anon-key') ||
+          supabaseKey.includes('placeholder') ||
+          supabaseKey === 'your-anon-key-here') {
+        console.log('⚠️ Supabase not properly configured, skipping ride loading')
+        console.log('Current URL:', supabaseUrl)
+        console.log('Key available:', !!supabaseKey)
+        this.setCurrentRide(null)
         return
       }
 
@@ -148,11 +159,22 @@ class RideNotificationManager {
     try {
       console.log('🔍 Loading assigned scheduled booking...')
       
-      // Check if Supabase is properly configured
-      if (!process.env.EXPO_PUBLIC_SUPABASE_URL || 
-          process.env.EXPO_PUBLIC_SUPABASE_URL.includes('your-project-ref') ||
-          process.env.EXPO_PUBLIC_SUPABASE_URL === 'https://your-project-ref.supabase.co') {
-        console.log('⚠️ Supabase not configured, skipping scheduled booking loading')
+      // Check if Supabase is properly configured - more comprehensive check
+      const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL
+      const supabaseKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY
+      
+      if (!supabaseUrl || 
+          !supabaseKey ||
+          supabaseUrl.includes('your-project-ref') ||
+          supabaseUrl.includes('placeholder') ||
+          supabaseUrl === 'https://your-project-ref.supabase.co' ||
+          supabaseKey.includes('your-anon-key') ||
+          supabaseKey.includes('placeholder') ||
+          supabaseKey === 'your-anon-key-here') {
+        console.log('⚠️ Supabase not properly configured, skipping scheduled booking loading')
+        console.log('Current URL:', supabaseUrl)
+        console.log('Key available:', !!supabaseKey)
+        this.setScheduledBookings([])
         return
       }
 
@@ -195,11 +217,22 @@ class RideNotificationManager {
     try {
       console.log('🔔 Loading pending ride notifications...')
       
-      // Check if Supabase is properly configured
-      if (!process.env.EXPO_PUBLIC_SUPABASE_URL || 
-          process.env.EXPO_PUBLIC_SUPABASE_URL.includes('your-project-ref') ||
-          process.env.EXPO_PUBLIC_SUPABASE_URL === 'https://your-project-ref.supabase.co') {
-        console.log('⚠️ Supabase not configured, skipping notifications loading')
+      // Check if Supabase is properly configured - more comprehensive check
+      const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL
+      const supabaseKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY
+      
+      if (!supabaseUrl || 
+          !supabaseKey ||
+          supabaseUrl.includes('your-project-ref') ||
+          supabaseUrl.includes('placeholder') ||
+          supabaseUrl === 'https://your-project-ref.supabase.co' ||
+          supabaseKey.includes('your-anon-key') ||
+          supabaseKey.includes('placeholder') ||
+          supabaseKey === 'your-anon-key-here') {
+        console.log('⚠️ Supabase not properly configured, skipping notifications loading')
+        console.log('Current URL:', supabaseUrl)
+        console.log('Key available:', !!supabaseKey)
+        this.setPendingRides([])
         return
       }
 
