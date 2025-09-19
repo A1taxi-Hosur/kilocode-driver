@@ -182,9 +182,9 @@ export function LocationProvider({ children }: LocationProviderProps) {
         .upsert(locationData, { onConflict: 'user_id' })
         .select()
 
-      if (insertError) {
+      if (upsertError) {
         // If insert fails, try to update existing record
-        console.log('⚠️ Insert failed, attempting update:', insertError.message)
+        console.log('⚠️ Upsert failed, attempting manual insert/update:', upsertError.message)
         const { data: updateData, error: updateError } = await client
           .from('live_locations')
           .update({
@@ -382,8 +382,8 @@ export function LocationProvider({ children }: LocationProviderProps) {
         console.log('✅ Location record updated successfully:', resultData)
       }
     } else {
-      const resultData = insertData && insertData.length > 0 ? insertData[0] : null
-      console.log('✅ Location record inserted successfully:', resultData)
+      const resultData = upsertData && upsertData.length > 0 ? upsertData[0] : null
+      console.log('✅ Location record upserted successfully:', resultData)
     }
     
     // Step 4: Verify the record was saved
