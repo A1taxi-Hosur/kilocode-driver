@@ -1,0 +1,47 @@
+{
+  "expo": {
+    "name": "TaxiDriver Pro",
+    "slug": "taxi-driver-pro",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "taxidriver",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": false,
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.taxidriverpro.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      }
+    },
+    "ios": {
+      "bundleIdentifier": "com.taxidriverpro.app",
+      "supportsTablet": true
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "This app needs access to location when open and in the background to track driver location and match with nearby ride requests."
+        }
+      ]
+    ],
+    "extra": {
+      "googleMapsApiKey": "AIzaSyBIHJUk4DuAG7tjp_gIdNhUJdpBKN1eM2Q"
+    },
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
