@@ -176,40 +176,55 @@ export function LocationProvider({ children }: LocationProviderProps) {
       locationData.longitude = 77.824
       console.log('📍 Using Bangalore coordinates for driver visibility:', locationData.latitude, locationData.longitude)
       
-      // Use upsert for insert or update operation
-      const { data: upsertData, error: upsertError } = await client
+      // Check if record exists first, then update or insert accordingly
+      const { data: existingRecord, error: checkError2 } = await client
         .from('live_locations')
-        .upsert(locationData, { onConflict: 'user_id' })
-        .select()
+        .select('id')
+        .eq('user_id', driver.user_id)
+        .limit(1)
+        .single()
 
-      if (upsertError) {
-        // If insert fails, try to update existing record
-        console.log('⚠️ Upsert failed, attempting manual insert/update:', upsertError.message)
+      if (existingRecord && !checkError2) {
+        // Record exists, update it
+        console.log('📝 Updating existing location record with ID:', existingRecord.id)
         const { data: updateData, error: updateError } = await client
-          .from('live_locations')
-          .update({
-            latitude: locationData.latitude,
-            longitude: locationData.longitude,
-            heading: locationData.heading,
-            speed: locationData.speed,
-            accuracy: locationData.accuracy,
-            updated_at: locationData.updated_at
-          })
-          .eq('user_id', driver.user_id)
-          .select()
-          .limit(1)
+        .from('live_locations')
+        .update({
+          latitude: locationData.latitude,
+          longitude: locationData.longitude,
+          heading: locationData.heading,
+          speed: locationData.speed,
+          accuracy: locationData.accuracy,
+          updated_at: locationData.updated_at
+        })
+        .eq('id', existingRecord.id)
+        .select()
+        .limit(1)
 
-        if (updateError) {
-          console.error('❌ Error updating location record:', updateError)
-          return false
-        } else {
-          const resultData = updateData && updateData.length > 0 ? updateData[0] : null
-          console.log('✅ Location record updated successfully:', resultData)
-        }
+      if (updateError) {
+        console.error('❌ Error updating location record:', updateError)
+        return false
+      } else {
+        const resultData = updateData && updateData.length > 0 ? updateData[0] : null
+        console.log('✅ Location record updated successfully:', resultData)
+      }
+    } else {
+      // Record doesn't exist, insert new one
+      console.log('➕ Creating new location record')
+      const { data: insertData, error: insertError } = await client
+        .from('live_locations')
+        .insert(locationData)
+        .select()
+        .limit(1)
+
+      if (insertError) {
+        console.error('❌ Error inserting location record:', insertError)
+        return false
       } else {
         const resultData = insertData && insertData.length > 0 ? insertData[0] : null
         console.log('✅ Location record inserted successfully:', resultData)
       }
+    }
       
       // Step 4: Verify the record was saved
       const { data: verifyRecords, error: verifyError } = await client
@@ -341,7 +356,6 @@ export function LocationProvider({ children }: LocationProviderProps) {
       const client = supabaseAdmin || supabase
       
       const locationData = {
-        user_id: driver.user_id,
         latitude: location.coords.latitude,
         longitude: location.coords.longitude,
         heading: location.coords.heading,
@@ -350,64 +364,76 @@ export function LocationProvider({ children }: LocationProviderProps) {
         updated_at: new Date().toISOString()
       }
 
-      // Manual insert/update since no unique constraint on user_id
-      const { data: insertData, error: insertError } = await client
+      // Check if record exists first
+      const { data: existingRecord, error: checkError } = await client
         .from('live_locations')
-        .insert(locationData)
-        .select()
-        .limit(1)
-
-      if (insertError) {
-        // If insert fails, try to update existing record
-        console.log('⚠️ Insert failed, attempting update:', insertError.message)
-        const { data: updateData, error: updateError } = await client
-        .from('live_locations')
-        .update({
-          latitude: locationData.latitude,
-          longitude: locationData.longitude,
-          heading: locationData.heading,
-          speed: locationData.speed,
-          accuracy: locationData.accuracy,
-          updated_at: locationData.updated_at
-        })
+        .select('id')
         .eq('user_id', driver.user_id)
-        .select()
+        .limit(1)
+        .single()
+
+      if (existingRecord && !checkError) {
+        // Record exists, update it
+        console.log('📝 Updating existing location record with ID:', existingRecord.id)
+        const { data: updateData, error: updateError } = await client
+          .from('live_locations')
+          .update(locationData)
+          .eq('id', existingRecord.id)
+          .select()
+          .limit(1)
+
+        if (updateError) {
+          console.error('❌ Error updating location record:', updateError)
+          return
+        } else {
+          const resultData = updateData && updateData.length > 0 ? updateData[0] : null
+          console.log('✅ Location record updated successfully:', resultData)
+        }
+      } else {
+        // Record doesn't exist, create new one
+        console.log('➕ Creating new location record')
+        const newLocationData = {
+          user_id: driver.user_id,
+          ...locationData
+        }
+        
+        const { data: insertData, error: insertError } = await client
+          .from('live_locations')
+          .insert(newLocationData)
+          .select()
+          .limit(1)
+
+        if (insertError) {
+          console.error('❌ Error inserting location record:', insertError)
+          return
+        } else {
+          const resultData = insertData && insertData.length > 0 ? insertData[0] : null
+          console.log('✅ Location record inserted successfully:', resultData)
+        }
+      }
+    
+      // Verify the record was saved
+      const { data: verifyRecords, error: verifyError } = await client
+        .from('live_locations')
+        .select('*')
+        .eq('user_id', driver.user_id)
         .limit(1)
 
-      if (updateError) {
-        console.error('❌ Error updating location record:', updateError)
-        return
+      if (verifyError) {
+        console.error('⚠️ Could not verify saved record:', verifyError)
+      } else if (verifyRecords && verifyRecords.length > 0) {
+        const verifyData = verifyRecords[0]
+        console.log('✅ Record verified in database:', {
+          id: verifyData.id,
+          coordinates: `${verifyData.latitude}, ${verifyData.longitude}`,
+          updated_at: verifyData.updated_at
+        })
       } else {
-        const resultData = updateData && updateData.length > 0 ? updateData[0] : null
-        console.log('✅ Location record updated successfully:', resultData)
+        console.error('⚠️ No record found after insert/update')
       }
-    } else {
-      const resultData = upsertData && upsertData.length > 0 ? upsertData[0] : null
-      console.log('✅ Location record upserted successfully:', resultData)
+    } catch (error) {
+      console.error('❌ Exception updating location in database:', error)
     }
-    
-    // Step 4: Verify the record was saved
-    const { data: verifyRecords, error: verifyError } = await client
-      .from('live_locations')
-      .select('*')
-      .eq('user_id', driver.user_id)
-      .limit(1)
-
-    if (verifyError) {
-      console.error('⚠️ Could not verify saved record:', verifyError)
-    } else if (verifyRecords && verifyRecords.length > 0) {
-      const verifyData = verifyRecords[0]
-      console.log('✅ Record verified in database:', {
-        id: verifyData.id,
-        coordinates: `${verifyData.latitude}, ${verifyData.longitude}`,
-        updated_at: verifyData.updated_at
-      })
-    } else {
-      console.error('⚠️ No record found after insert/update')
-    }
-  } catch (error) {
-    console.error('❌ Exception updating location in database:', error)
-  }
   }
 
   const requestLocationPermission = async (): Promise<boolean> => {
