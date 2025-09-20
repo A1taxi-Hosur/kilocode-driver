@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import * as Location from 'expo-location'
-import { supabase, supabaseAdmin } from '../utils/supabase'
+import { supabase, isSupabaseConfigured } from '../utils/supabase'
 import { useAuth } from './AuthContext'
 import { calculateDistance, getCurrentLocationWithGoogleMaps, reverseGeocode } from '../utils/maps'
 import { Platform } from 'react-native'
@@ -101,18 +101,28 @@ export function LocationProvider({ children }: LocationProviderProps) {
       return false
     }
 
+    if (!isSupabaseConfigured) {
+      console.warn('⚠️ Supabase not configured, skipping location record creation')
+      return false
+    }
+
     try {
       console.log('=== FORCE CREATING LOCATION RECORD ===')
       console.log('Driver User ID:', driver.user_id)
       console.log('Driver Name:', driver.user?.full_name)
-      console.log('Using supabaseAdmin:', !!supabaseAdmin)
+      console.log('Using supabase client with RLS policies')
 
-      // Use standard client with proper RLS policies
-      const client = supabase
+      // Check if we can make requests to Supabase
+      try {
+        await supabase.from('live_locations').select('id').limit(1);
+      } catch (connectionError) {
+        console.error('❌ Cannot connect to Supabase:', connectionError.message);
+        return false;
+      }
       
       // Step 1: Check if record already exists
       console.log('🔍 Checking if location record already exists...')
-      const { data: existingRecords, error: checkError } = await client
+      const { data: existingRecords, error: checkError } = await supabase
         .from('live_locations')
         .select('*')
         .eq('user_id', driver.user_id)
@@ -177,7 +187,7 @@ export function LocationProvider({ children }: LocationProviderProps) {
       console.log('📍 Using Bangalore coordinates for driver visibility:', locationData.latitude, locationData.longitude)
       
       // Check if record exists first, then update or insert accordingly
-      const { data: existingRecord, error: checkError2 } = await client
+      const { data: existingRecord, error: checkError2 } = await supabase
         .from('live_locations')
         .select('id')
         .eq('user_id', driver.user_id)
@@ -187,7 +197,7 @@ export function LocationProvider({ children }: LocationProviderProps) {
       if (existingRecord && !checkError2) {
         // Record exists, update it
         console.log('📝 Updating existing location record with ID:', existingRecord.id)
-        const { data: updateData, error: updateError } = await client
+        const { data: updateData, error: updateError } = await supabase
         .from('live_locations')
         .update({
           latitude: locationData.latitude,
@@ -227,7 +237,7 @@ export function LocationProvider({ children }: LocationProviderProps) {
     }
       
       // Step 4: Verify the record was saved
-      const { data: verifyRecords, error: verifyError } = await client
+      const { data: verifyRecords, error: verifyError } = await supabase
         .from('live_locations')
         .select('*')
         .eq('user_id', driver.user_id)
@@ -344,6 +354,11 @@ export function LocationProvider({ children }: LocationProviderProps) {
       return
     }
 
+    if (!isSupabaseConfigured) {
+      console.warn('⚠️ Supabase not configured, skipping location update')
+      return
+    }
+
     try {
       console.log('=== UPDATING DRIVER LOCATION IN DATABASE ===')
       console.log('Driver User ID:', driver.user_id)
@@ -353,8 +368,6 @@ export function LocationProvider({ children }: LocationProviderProps) {
         accuracy: location.coords.accuracy
       })
 
-      const client = supabase
-      
       const locationData = {
         latitude: location.coords.latitude,
         longitude: location.coords.longitude,
@@ -365,7 +378,7 @@ export function LocationProvider({ children }: LocationProviderProps) {
       }
 
       // Check if record exists first
-      const { data: existingRecord, error: checkError } = await client
+      const { data: existingRecord, error: checkError } = await supabase
         .from('live_locations')
         .select('id')
         .eq('user_id', driver.user_id)
@@ -375,7 +388,7 @@ export function LocationProvider({ children }: LocationProviderProps) {
       if (existingRecord && !checkError) {
         // Record exists, update it
         console.log('📝 Updating existing location record with ID:', existingRecord.id)
-        const { data: updateData, error: updateError } = await client
+        const { data: updateData, error: updateError } = await supabase
           .from('live_locations')
           .update(locationData)
           .eq('id', existingRecord.id)
@@ -397,7 +410,7 @@ export function LocationProvider({ children }: LocationProviderProps) {
           ...locationData
         }
         
-        const { data: insertData, error: insertError } = await client
+        const { data: insertData, error: insertError } = await supabase
           .from('live_locations')
           .insert(newLocationData)
           .select()
@@ -413,7 +426,7 @@ export function LocationProvider({ children }: LocationProviderProps) {
       }
     
       // Verify the record was saved
-      const { data: verifyRecords, error: verifyError } = await client
+      const { data: verifyRecords, error: verifyError } = await supabase
         .from('live_locations')
         .select('*')
         .eq('user_id', driver.user_id)
